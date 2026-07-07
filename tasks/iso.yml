@@ -25,9 +25,6 @@
     state: present
   register: iso_mount
 
-- debug:
-    var: "{{ iso_mount.mount_paths[0] }}"
-
 - name: Import OS
   ansible.windows.win_powershell:
     error_action: stop
@@ -44,3 +41,8 @@
       - "-ExecutionPolicy ByPass"
     creates: '{{ mdt_deployment_share_local_path }}\Operating Systems\Windows 11 Enterprise Evaluation'
   with_items: "{{ drivers }}"
+
+- name: Unmount ISO
+  community.windows.win_disk_image:
+    image_path: C:\Install\ISO\26200.6584.250915-1905.25h2_ge_release_svc_refresh_CLIENTENTERPRISEEVAL_OEMRET_x64FRE_en-us.iso
+    state: absent
