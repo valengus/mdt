@@ -1,0 +1,46 @@
+---
+- name: Ensure ISO directory exists
+  win_file:
+    path: C:\Install\ISO
+    state: directory
+
+- name: Download Windows 11 Enterprise Evaluation 25H2 en-us ISO
+  ansible.builtin.get_url:
+    url: https://software-static.download.prss.microsoft.com/dbazure/888969d5-f34g-4e03-ac9d-1f9786c66749/26200.6584.250915-1905.25h2_ge_release_svc_refresh_CLIENTENTERPRISEEVAL_OEMRET_x64FRE_en-us.iso
+    dest: "{{ role_path }}/files/iso/26200.6584.250915-1905.25h2_ge_release_svc_refresh_CLIENTENTERPRISEEVAL_OEMRET_x64FRE_en-us.iso"
+    checksum: sha256:a61adeab895ef5a4db436e0a7011c92a2ff17bb0357f58b13bbc4062e535e7b9
+    mode: '0644'
+  delegate_to: localhost
+  run_once: true
+  become: false
+
+- name: Copy Win11 ISO
+  win_copy:
+    src: files/iso/26200.6584.250915-1905.25h2_ge_release_svc_refresh_CLIENTENTERPRISEEVAL_OEMRET_x64FRE_en-us.iso
+    dest: C:\Install\ISO\26200.6584.250915-1905.25h2_ge_release_svc_refresh_CLIENTENTERPRISEEVAL_OEMRET_x64FRE_en-us.iso
+
+- name: Mount ISO
+  community.windows.win_disk_image:
+    image_path: C:\Install\ISO\26200.6584.250915-1905.25h2_ge_release_svc_refresh_CLIENTENTERPRISEEVAL_OEMRET_x64FRE_en-us.iso
+    state: present
+  register: iso_mount
+
+- debug:
+    var: "{{ iso_mount.mount_paths[0] }}"
+
+- name: Import OS
+  ansible.windows.win_powershell:
+    error_action: stop
+    script: |
+      {{ mdt_ps_init }}
+
+      Import-MDTOperatingSystem -path "{{ mdt_deployment_share_psdrive }}:\Operating Systems" -SourcePath {{ iso_mount.mount_paths[0] }} -DestinationFolder "Windows 11 Enterprise Evaluation" -Verbose
+      {{ mdt_ps_wait_saving }}
+      
+      Get-ChildItem "{{ mdt_deployment_share_psdrive }}:\Operating Systems" | Select-Object Name
+      Rename-Item "{{ mdt_deployment_share_psdrive }}:\Operating Systems\Windows 11 Enterprise Evaluation in Windows 11 Enterprise Evaluation install.wim" -NewName "Windows 11 Enterprise Evaluation" -Verbose
+      {{ mdt_ps_wait_saving }}
+    arguments:
+      - "-ExecutionPolicy ByPass"
+    creates: '{{ mdt_deployment_share_local_path }}\Operating Systems\Windows 11 Enterprise Evaluation'
+  with_items: "{{ drivers }}"

@@ -1,0 +1,18 @@
+---
+- name: User
+  ansible.builtin.include_tasks: user.yml
+
+- name: Install
+  ansible.builtin.include_tasks: install.yml
+
+- name: Create Deployment Share
+  ansible.builtin.include_tasks: create_ds.yml
+
+- name: Drivers
+  ansible.builtin.include_tasks: drivers.yml
+
+- name: ISO
+  ansible.builtin.include_tasks: iso.yml
+
+- name: Applications
+  ansible.builtin.include_tasks: applications.yml

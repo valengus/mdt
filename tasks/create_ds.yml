@@ -1,0 +1,72 @@
+---
+- name: "Create DeploymentShare directory {{ mdt_deployment_share_local_path }}"
+  ansible.windows.win_file:
+    path: "{{ mdt_deployment_share_local_path }}"
+    state: directory
+
+- name: Set DeploymentShare permissions for Administrators
+  ansible.windows.win_acl:
+    path: "{{ mdt_deployment_share_local_path }}"
+    user: Administrators
+    rights: FullControl
+    type: allow
+    state: present
+    inherit: ContainerInherit, ObjectInherit
+    propagation: None
+
+- name: Set DeploymentShare permissions for mdt user
+  ansible.windows.win_acl:
+    path: "{{ mdt_deployment_share_local_path }}"
+    user: "{{ mdt_user }}"
+    rights: FullControl
+    type: allow
+    state: present
+    inherit: ContainerInherit, ObjectInherit
+    propagation: None
+
+- name: Disable inheritance on DeploymentShare
+  ansible.windows.win_acl_inheritance:
+    path: "{{ mdt_deployment_share_local_path }}"
+    state: absent
+    reorganize: yes
+
+- name: Create SMB share for DeploymentShare
+  ansible.windows.win_share:
+    name: "{{ mdt_deployment_share_name }}"
+    path: "{{ mdt_deployment_share_local_path }}"
+    full: "Administrators,{{ mdt_user }}"
+    state: present
+
+- name: Create MDT Deployment Share PSDrive
+  ansible.windows.win_powershell:
+    script: |
+      Import-Module 'C:\Program Files\Microsoft Deployment Toolkit\bin\MicrosoftDeploymentToolkit.psd1'
+      New-PSDrive -Name "{{ mdt_deployment_share_psdrive }}" `
+        -PSProvider "MDTProvider" `
+        -Root "{{ mdt_deployment_share_local_path }}" `
+        -Description "MDT Deployment Share" `
+        -NetworkPath "{{ mdt_deployment_share_network_path }}" `
+        -Verbose | add-MDTPersistentDrive -Verbose
+    creates: '{{ mdt_deployment_share_local_path }}\Control\Bootstrap.ini'
+    arguments:
+      - "-ExecutionPolicy ByPass"
+
+- name: Disable SupportX86
+  ansible.windows.win_powershell:
+    script: |
+      {{ mdt_ps_init }}
+
+      Set-ItemProperty -Path {{ mdt_deployment_share_psdrive }}: -Name "SupportX86" -Value "False"
+      Set-ItemProperty -Path {{ mdt_deployment_share_psdrive }}: -Name "SupportX64" -Value "True"
+    arguments:
+      - "-ExecutionPolicy ByPass"
+
+- name: Create Bootstrap.ini from template
+  ansible.windows.win_template:
+    src: templates/Bootstrap.ini
+    dest: '{{ mdt_deployment_share_local_path }}\Control\Bootstrap.ini'
+
+- name: Create CustomSettings.ini from template
+  ansible.windows.win_template:
+    src: templates/CustomSettings.ini
+    dest: '{{ mdt_deployment_share_local_path }}\Control\CustomSettings.ini'

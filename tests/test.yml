@@ -1,0 +1,6 @@
+---
+- hosts: mdt
+  tasks:
+
+  - include_role: 
+      name: mdt

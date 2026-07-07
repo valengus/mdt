@@ -1,0 +1,47 @@
+---
+- name: Ensure C:\Drivers directory exists
+  win_file:
+    path: C:\Install\Drivers
+    state: directory
+
+- name: Get all zip files in drivers folder
+  find:
+    paths: "{{ role_path }}/files/drivers"
+    patterns: "*.zip"
+  register: drivers
+  delegate_to: localhost
+
+- name: Get all zip archives
+  set_fact:
+    drivers: "{{ drivers.files | map(attribute='path') | map('basename') | map('splitext') | map('first') | list }}"
+
+- name: Copy drivers
+  win_copy:
+    src: files/drivers/{{ item }}.zip
+    dest: C:\Install\Drivers\{{ item }}.zip
+  with_items: "{{ drivers }}"
+
+- name: Unzip
+  community.windows.win_unzip:
+    src: C:\Install\Drivers\{{ item }}.zip
+    dest: C:\Install\Drivers\{{ item }}
+    creates: C:\Install\Drivers\{{ item }}
+  with_items: "{{ drivers }}"
+
+- name: Create driver foler
+  ansible.windows.win_powershell:
+    error_action: stop
+    script: |
+      {{ mdt_ps_init }}
+
+      if (-not (Test-Path "{{ mdt_deployment_share_psdrive }}:\Out-of-Box Drivers\{{ item }}")) {
+          New-Item -Path "{{ mdt_deployment_share_psdrive }}:\Out-of-Box Drivers" -Enable "True" -Name "{{ item }}" -Comments "" -ItemType "folder" -Verbose
+          {{ mdt_ps_wait_saving }}
+      }
+      if (@(Get-ChildItem "{{ mdt_deployment_share_psdrive }}:\Out-of-Box Drivers\{{ item }}").Count -eq 0) {
+          Import-MDTDriver -Path "{{ mdt_deployment_share_psdrive }}:\Out-of-Box Drivers\{{ item }}" -SourcePath "C:\Install\Drivers\{{ item }}" -Verbose
+      }
+      Remove-PSDrive -Name {{ mdt_deployment_share_psdrive }} -Force
+    arguments:
+      - "-ExecutionPolicy ByPass"
+  with_items: "{{ drivers }}"

@@ -1,0 +1,19 @@
+---
+- name: Ensure Applications directory exists
+  win_file:
+    path: C:\Install\Applications
+    state: directory
+
+- name: Ensure app directory exists
+  win_file:
+    path: 'C:\Install\Applications\{{ item.app_name }}'
+    state: directory
+  with_items: "{{ mdt_applications }}"
+
+- name: Download app
+  win_get_url:
+    url: "{{ item.app_d_url }}"
+    dest: 'C:\Install\Applications\{{ item.app_name }}\{{ item.app_d_url | basename }}'
+    validate_certs: no
+    force: no
+  with_items: "{{ mdt_applications }}"

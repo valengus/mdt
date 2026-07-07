@@ -1,0 +1,85 @@
+---
+- name: Ensure C:\Install directory exists
+  win_file:
+    path: C:\Install
+    state: directory
+
+- name: Download Windows Assessment and Deployment Kit
+  win_get_url:
+    url: https://go.microsoft.com/fwlink/?linkid=2289980
+    dest: C:\Install\adksetup.exe
+    checksum: da228c57395ec6585e17c136aedd39ee8b8d6d8f
+    validate_certs: no
+    force: no
+
+- name: Install Windows Assessment and Deployment Kit
+  win_package:
+    path: C:\Install\adksetup.exe
+    product_id: '{b09b3bef-7c75-4e26-ae6b-f6cdeb0fb071}'
+    arguments: "/quiet /norestart /features +"
+    state: present
+
+- name: Download WinPE addon
+  win_get_url:
+    url: https://go.microsoft.com/fwlink/?linkid=2289981
+    dest: C:\Install\adkwinpesetup.exe
+    checksum: db637f8301cc2af605eadd4d4aa328f6297a54b0
+    validate_certs: no
+    force: no
+
+- name: Install Windows Assessment and Deployment Kit Windows Preinstallation Environment Add-ons
+  win_package:
+    path: C:\Install\adkwinpesetup.exe
+    product_id: "{e0f929f8-610d-469c-bfa1-7961a14eb91b}"
+    arguments: "/quiet /norestart /features +"
+    state: present
+
+- name: Copy MicrosoftDeploymentToolkit_x64.msi
+  win_copy:
+    src: files/mdt/6.3.8450.1/MicrosoftDeploymentToolkit_x64.msi
+    dest: C:\Install\MicrosoftDeploymentToolkit_x64.msi
+
+- name: Install Microsoft Deployment Toolkit (6.3.8450.1000)
+  win_package:
+    path: C:\Install\MicrosoftDeploymentToolkit_x64.msi
+    product_id: '{38D2CBE2-862C-4C39-8D65-A4C1C2220160}'
+    arguments: /quiet /norestart
+    state: present
+
+- name: Ensure MDT_KB4564442 directory exists
+  win_file:
+    path: C:\Install\MDT_KB4564442
+    state: directory
+
+- name: Copy MDT_KB4564442.exe
+  win_copy:
+    src: files/mdt/MDT_KB4564442.exe
+    dest: C:\Install\MDT_KB4564442\MDT_KB4564442.exe
+
+# - name: Download MDT KB4564442 patch
+#   win_get_url:
+#     url: https://download.microsoft.com/download/3/0/6/306AC1B2-59BE-43B8-8C65-E141EF287A5E/KB4564442/MDT_KB4564442.exe
+#     dest: C:\Install\MDT_KB4564442\MDT_KB4564442.exe
+#     validate_certs: no
+
+- name: Extract KB4564442 patch
+  win_shell: C:\Install\MDT_KB4564442\MDT_KB4564442.exe /extract:C:\Install\MDT_KB4564442 /q
+  args:
+    creates: C:\Install\MDT_KB4564442\x64\microsoft.bdd.utility.dll
+
+- name: Apply KB4564442 patch (x64)
+  win_copy:
+    src: C:\Install\MDT_KB4564442\x64\
+    dest: C:\Program Files\Microsoft Deployment Toolkit\Templates\Distribution\Tools\x64\
+    remote_src: yes
+
+- name: Apply KB4564442 patch (x86)
+  win_copy:
+    src: C:\Install\MDT_KB4564442\x86\
+    dest: C:\Program Files\Microsoft Deployment Toolkit\Templates\Distribution\Tools\x86\
+    remote_src: yes
+
+- name: Create WinPE_OCs x86 dir
+  ansible.windows.win_file:
+    path: C:\Program Files (x86)\Windows Kits\10\Assessment and Deployment Kit\Windows Preinstallation Environment\x86\WinPE_OCs
+    state: directory

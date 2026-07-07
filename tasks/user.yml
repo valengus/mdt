@@ -1,0 +1,11 @@
+---
+- name: Ensure mdt user exists
+  ansible.windows.win_user:
+    name: "{{ mdt_user }}"
+    password: "{{ mdt_user_password }}"
+    state: present
+    groups:
+      - Remote Desktop Users
+      - Users
+    account_disabled: no
+    password_never_expires: yes

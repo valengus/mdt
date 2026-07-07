@@ -1,0 +1,26 @@
+---
+mdt_deployment_share_name: DeploymentShare
+mdt_deployment_share_local_path: C:\{{ mdt_deployment_share_name }}
+mdt_deployment_share_psdrive: "DS001"
+mdt_deployment_root: "{{ ansible_fqdn }}"
+mdt_deployment_share_network_path: '\\{{ mdt_deployment_root }}\{{ mdt_deployment_share_name }}'
+
+mdt_user: 'mdt'
+mdt_user_domain: "{{ ansible_fqdn }}"
+mdt_user_password: 'pa$$w0rd'
+
+mdt_applications:
+- app_name: "Google Chrome"
+  app_d_url: "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise64.msi"
+  app_install_args: "msiexec /i googlechromestandaloneenterprise64.msi /quiet /norestart"
+- app_name: "Slack"
+  app_d_url: "https://downloads.slack-edge.com/desktop-releases/windows/x64/4.47.69/slack-standalone-4.47.69.0.msi"
+  app_install_args: "msiexec /i slack-standalone-4.47.69.0.msi /quiet /norestart"
+
+
+mdt_ps_init: |
+  Import-Module "C:\Program Files\Microsoft Deployment Toolkit\bin\MicrosoftDeploymentToolkit.psd1"
+  New-PSDrive -Name "{{ mdt_deployment_share_psdrive }}" -PSProvider MDTProvider -Root "{{ mdt_deployment_share_local_path }}" | Out-Null
+
+mdt_ps_wait_saving: |
+  While ((Get-PSDrive -Name {{ mdt_deployment_share_psdrive }}).IsSaving -and (Get-Date) -lt (Get-Date).AddSeconds(60)) { Start-Sleep -Milliseconds 500 }
