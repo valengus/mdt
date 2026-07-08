@@ -14,16 +14,18 @@ Vagrant.configure("2") do |config|
     config.vm.box              = "peru/windows-server-2022-standard-x64-eval"
     config.vm.box_check_update = false
     config.vm.provider :libvirt do |libvirt|
-      libvirt.qemu_use_session = false
-      libvirt.default_prefix   = ''
-      libvirt.cpus             = 2
-      libvirt.memory           = 4 * 1024
+      libvirt.qemu_use_session     = false
+      libvirt.default_prefix       = ''
+      libvirt.cpus                 = 2
+      libvirt.memory               = 4 * 1024
+      libvirt.machine_virtual_size = 80
     end
     config.vm.network :private_network,
       auto_config:            false,
       libvirt__network_name:  "mdt-isolated",
       libvirt__forward_mode:  "none",
       libvirt__dhcp_enabled:  false
+    config.vm.provision "shell", inline: "Resize-Partition -DriveLetter C -Size (Get-PartitionSupportedSize -DriveLetter C).SizeMax"
     config.vm.provision "ansible" do |ansible|
       ansible.playbook = "tests/test.yml"
       ansible.verbose  = "v"
@@ -37,22 +39,22 @@ Vagrant.configure("2") do |config|
     end
   end
 
-  config.vm.define "mdt-client-legacy" do |config|
-    config.vm.box              = "peru/windows-10-enterprise-x64-eval"
-    config.vm.box_check_update = false
-    config.vm.provision "shell", inline: "$env:firmware_type"
-    config.vm.network :private_network,
-      auto_config:            false,
-      libvirt__network_name:  "mdt-isolated",
-      libvirt__forward_mode:  "none",
-      libvirt__dhcp_enabled:  false
-    config.vm.provider :libvirt do |libvirt|
-      libvirt.qemu_use_session = false
-      libvirt.default_prefix   = ''
-      libvirt.cpus             = 2
-      libvirt.memory           = 4 * 1024
-    end
-  end
+  # config.vm.define "mdt-client-legacy" do |config|
+  #   config.vm.box              = "peru/windows-10-enterprise-x64-eval"
+  #   config.vm.box_check_update = false
+  #   config.vm.provision "shell", inline: "$env:firmware_type"
+  #   config.vm.network :private_network,
+  #     auto_config:            false,
+  #     libvirt__network_name:  "mdt-isolated",
+  #     libvirt__forward_mode:  "none",
+  #     libvirt__dhcp_enabled:  false
+  #   config.vm.provider :libvirt do |libvirt|
+  #     libvirt.qemu_use_session = false
+  #     libvirt.default_prefix   = ''
+  #     libvirt.cpus             = 2
+  #     libvirt.memory           = 4 * 1024
+  #   end
+  # end
 
   # config.vm.define "mdt-client-uefi" do |config|
   #   config.vm.box              = "gusztavvargadr/windows-11"

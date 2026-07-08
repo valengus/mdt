@@ -17,3 +17,20 @@
     validate_certs: no
     force: no
   with_items: "{{ mdt_applications }}"
+
+- name: Add apps
+  ansible.windows.win_powershell:
+    error_action: stop
+    script: |
+      {{ mdt_ps_init }}
+
+      if (-not (Test-Path "{{ mdt_deployment_share_psdrive }}:\Applications\{{ item.app_name }}")) {
+        Import-MDTApplication -path "{{ mdt_deployment_share_psdrive }}:\Applications" -enable "True" -Name "{{ item.app_name }}" -ShortName "{{ item.app_name }}" -Version "" -Publisher "" -Language "" -CommandLine "{{ item.app_install_args }}" -WorkingDirectory ".\Applications\{{ item.app_name }}" -ApplicationSourcePath "C:\Install\Applications\{{ item.app_name }}" -DestinationFolder "{{ item.app_name }}" -Verbose
+
+        {{ mdt_ps_wait_saving }}
+      }
+
+      Remove-PSDrive -Name {{ mdt_deployment_share_psdrive }} -Force
+    arguments:
+      - "-ExecutionPolicy ByPass"
+  with_items: "{{ mdt_applications }}"

@@ -16,7 +16,9 @@ mdt_applications:
 - app_name: "Slack"
   app_d_url: "https://downloads.slack-edge.com/desktop-releases/windows/x64/4.47.69/slack-standalone-4.47.69.0.msi"
   app_install_args: "msiexec /i slack-standalone-4.47.69.0.msi /quiet /norestart"
-
+- app_name: "Zoom"
+  app_d_url: "https://cdn.zoom.us/prod/7.1.0.41345/x64/ZoomInstallerFull.msi"
+  app_install_args: "msiexec /i ZoomInstallerFull.msi /quiet /qn /norestart"
 
 mdt_ps_init: |
   Import-Module "C:\Program Files\Microsoft Deployment Toolkit\bin\MicrosoftDeploymentToolkit.psd1"

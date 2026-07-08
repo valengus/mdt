@@ -28,7 +28,7 @@
     creates: C:\Install\Drivers\{{ item }}
   with_items: "{{ drivers }}"
 
-- name: Create driver foler
+- name: Create driver folders
   ansible.windows.win_powershell:
     error_action: stop
     script: |
